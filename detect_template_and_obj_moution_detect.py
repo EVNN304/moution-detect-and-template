@@ -2,13 +2,37 @@ import time
 import multiprocessing as mp
 from lib import *
 import copy
+from playsound import playsound
+
+class Audio_Warning:
+    def __init__(self, Q_3:mp.Queue):
+        self.Q_3 = Q_3
+        self.process_audio = mp.Process(target=self.audio_play, args=())
+        self.process_audio.start()
+
+    def audio_play(self):
+        lst_proc = []
+        while True:
+            if not self.Q_3.empty():
+                if self.Q_3.get():
+
+                    pr = mp.Process(target=playsound, args=("alarm.mp3",))
+                    lst_proc.append(pr)
+                    pr.start()
+                    time.sleep(0.15)
 
 
+            else:
+
+
+                for name_pr in lst_proc:
+                    name_pr.terminate()
+                lst_proc = []
 
 
 class Template:
-    def __init__(self, Q_2:mp.Queue):
-        self.Q_2 = Q_2
+    def __init__(self, Q_2:mp.Queue, Q_3:mp.Queue):
+        self.Q_2, self.Q_3 = Q_2, Q_3
         self.template_list = ['temp_1.jpg', 'temp_2.jpg', "temp_4.jpg"]
         self.meth, self.percnt = 'cv.TM_CCOEFF_NORMED', 0.6
         self.tem_proc = mp.Process(target=self.templating, args=())
@@ -46,13 +70,11 @@ class Template:
                 print("LST_PER", lst_percent)
                 #if (lst_cord) and (sum(lst_percent)/len(lst_percent)>= self.percnt):
                 if (lst_cord) and (max(lst_percent)>= self.percnt):
-
+                    self.Q_3.put(True)
                     cv.rectangle(image, (lst_cord[0][0], lst_cord[0][1]), (lst_cord[0][2], lst_cord[0][3]), 0, 2)
+                    cv.putText(image, "drone" + " [" + str(round(max(lst_percent), 2)) + "]", (lst_cord[0][0] - 12, lst_cord[0][1] - 12), cv.FONT_HERSHEY_SIMPLEX, 2, [0, 0, 255], 2)
 
-
-                cv.imshow("frame_rect", cv.resize(image, (400, 400)))
-                #cv.imshow("frame_rect", image)
-
+                cv.imshow("frame_rect", cv.resize(image, (600, 600)))
                 cv.waitKey(1)
 
 
@@ -104,7 +126,6 @@ class CAM:
 
     def image_send(self):
         cap = cv.VideoCapture(self.num)
-        #cap = cv.VideoCapture("video_file")
         while cap.isOpened():
             flag, image = cap.read()
             if self.img_queue_1.empty():
@@ -277,18 +298,18 @@ class Moution_detect:
 
                 count += 1  # Счетчик кадров
                 cords = self.draw_traectory(last_last_detect, last_detection, boxes_3, self.triples, image_2)
-                #print("MOTION_CORD", cords)
                 #if self.Q_2.empty():
                 self.Q_2.put([image_3, cords])
-                cv.imshow("frame_moution", cv.resize(image_2, (400, 400)))
+                cv.imshow("frame_moution", cv.resize(image_2, (600, 600)))
                 cv.waitKey(1)
 
 
 
 if __name__ == '__main__':
-    Q_1, Q_2 = mp.Queue(maxsize=1), mp.Queue(maxsize=1)
+    Q_1, Q_2, Q_3 = mp.Queue(maxsize=1), mp.Queue(maxsize=1), mp.Queue(maxsize=1)
     initializ = usb_cam_initialization(5)
     num = initializ.fuind_cam()
     cam = CAM(Q_1, num)
-    temp = Template(Q_2)
+    temp = Template(Q_2, Q_3)
+    audio = Audio_Warning(Q_3)
     moution = Moution_detect(Q_1, Q_2)
