@@ -2,8 +2,7 @@ import time
 import multiprocessing as mp
 from lib import *
 import copy
-from playsound import playsound
-
+import os
 class Audio_Warning:
     def __init__(self, Q_3:mp.Queue):
         self.Q_3 = Q_3
@@ -12,11 +11,12 @@ class Audio_Warning:
 
     def audio_play(self):
         lst_proc = []
+        file = "alarm.mp3"
         while True:
             if not self.Q_3.empty():
                 if self.Q_3.get():
 
-                    pr = mp.Process(target=playsound, args=("alarm.mp3",))
+                    pr = mp.Process(target=os.system, args=("mpg123 " + file,))
                     lst_proc.append(pr)
                     pr.start()
                     time.sleep(0.15)
@@ -30,6 +30,10 @@ class Audio_Warning:
                 lst_proc = []
 
 
+
+
+
+
 class Template:
     def __init__(self, Q_2:mp.Queue, Q_3:mp.Queue):
         self.Q_2, self.Q_3 = Q_2, Q_3
@@ -37,7 +41,6 @@ class Template:
         self.meth, self.percnt = 'cv.TM_CCOEFF_NORMED', 0.6
         self.tem_proc = mp.Process(target=self.templating, args=())
         self.tem_proc.start()
-
 
 
     def templating(self):
