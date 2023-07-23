@@ -6,4 +6,5 @@ The program implements:
 3. Cutting a fragment from the main image and comparing with templates
 4. Selecting the maximum probability over all patterns and comparing with the set threshold
 5. Draw the box if the threshold is passed
-![alt text](image.png) 
+![alt text](image.png)
+![alt text](image_2.png) 
